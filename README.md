@@ -53,6 +53,34 @@ No error here, client just keeps making requests
 --- Shutdown Client ---
 2
 --- Done ---
+```
 
+### 2024-04-19 UPDATE!
+I discovered when creating a h2c server you must call `http2.ConfigureServer()` in order of the graceful shutdown
+message to be registered with `http.Server` such that it is called when `Server.Shutdown()` is called.
+```go
+// -- SNIP --
 
+s.listener, err = net.Listen("tcp", address)
+if err != nil {
+	panic(err)
+}
+
+h2s := &http2.Server{}
+mux := http.NewServeMux()
+mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	_, _ = fmt.Fprint(w, msg)
+})
+
+s.srv = &http.Server{
+	Handler: h2c.NewHandler(mux, h2s),
+	Addr:    address,
+}
+
+// Must add ConfigureServer in order for graceful shutdown to work as expected.
+if err := http2.ConfigureServer(s.srv, h2s); err != nil {
+	panic(err)
+}
+
+// -- SNIP --
 ```

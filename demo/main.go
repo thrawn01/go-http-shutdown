@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	shutdown "github.com/thrawn01/go-http-shutdown"
@@ -81,6 +82,8 @@ func main() {
 	if err := srv.Shutdown(context.Background()); err != nil {
 		panic(err)
 	}
+
+	atomic.StoreInt64(&shutdown.StopTheWorld, 1)
 
 	// Allow the client to continue making requests
 	time.Sleep(time.Second * 2)

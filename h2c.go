@@ -28,8 +28,14 @@ func SpawnH2CServer(msg string) *Server {
 	})
 
 	s.srv = &http.Server{
-		Addr:    address,
 		Handler: h2c.NewHandler(mux, h2s),
+		Addr:    address,
+	}
+
+	// SECRIT SAUCE HERE!!!!
+	// Must add ConfigureServer in order for graceful shutdown to work as expected.
+	if err := http2.ConfigureServer(s.srv, h2s); err != nil {
+		panic(err)
 	}
 
 	s.wg.Add(1)

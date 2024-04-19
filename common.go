@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -62,10 +63,13 @@ func waitForConnect(ctx context.Context, address string, cfg *tls.Config) error 
 	}
 }
 
+var StopTheWorld int64
+
 func runClient(client *http.Client, scheme, msg string) func() {
 	done := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(1)
+
 	go func() {
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%slocalhost:2319", scheme), nil)
 		if err != nil {
@@ -75,6 +79,9 @@ func runClient(client *http.Client, scheme, msg string) func() {
 
 		for {
 			//fmt.Printf("R")
+			if atomic.LoadInt64(&StopTheWorld) == 1 {
+				_, _ = fmt.Fprintf(io.Discard, "Stop the World")
+			}
 			resp, err := client.Do(req)
 			if err != nil {
 				fmt.Printf("Client Err: %s\n", err)
